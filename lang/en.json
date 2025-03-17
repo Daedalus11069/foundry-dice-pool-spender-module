@@ -1,0 +1,16 @@
+{
+  "DICEPOOLSPENDER": {
+    "global": {
+      "FallbackTrigger": {
+        "Name": "Fallback Trigger",
+        "Hint": "The text that triggers the specified dice pool to decrement, if no player specifies text. If not specified, defaults to 'action die'"
+      }
+    },
+    "local": {
+      "Trigger": {
+        "Name": "Trigger",
+        "Hint": "The text that triggers the specified dice pool to decrement.  If not specified, defaults to GM-set text."
+      }
+    }
+  }
+}

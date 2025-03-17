@@ -1,0 +1,43 @@
+{
+  "id": "dice-pool-spender",
+  "title": "Dice Pool Spender",
+  "description": "Spend dice pools depending on flavor text of rolls",
+  "authors": [{ "name": "Daedalus11069" }],
+  "version": "This is auto replaced",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "11",
+    "maximum": "11"
+  },
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "dicePools",
+        "type": "module",
+        "manifest": "https://github.com/Handyfon/dice-pools/raw/refs/heads/main/module.json",
+        "compatibility": {
+          "verified": "10.1"
+        }
+      },
+      {
+        "id": "socketlib",
+        "type": "module",
+        "compatibility": {
+          "verified": "1.0.13"
+        }
+      }
+    ]
+  },
+  "socket": true,
+  "scripts": ["dev-env.js"],
+  "url": "This is auto replaced",
+  "download": "This is auto replaced",
+  "manifest": "This is auto replaced"
+}
