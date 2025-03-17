@@ -3,13 +3,25 @@
     "global": {
       "FallbackTrigger": {
         "Name": "Fallback Trigger",
-        "Hint": "The text that triggers the specified dice pool to decrement, if no player specifies text. If not specified, defaults to 'action die'"
+        "Hint": "The text that triggers the character's dice pool to decrement. If not specified, defaults to 'action die'."
+      },
+      "FallbackBonusTrigger": {
+        "Name": "Fallback Bonus Trigger",
+        "Hint": "The text that triggers the character's bonus dice pool to decrement if there is one. If not specified, defaults to '+b'."
+      },
+      "BonusPoolSuffix": {
+        "Name": "Bonus Pool Suffix",
+        "Hint": "The suffix denoting a pool to be a bonus pool; defaults to 'bonus'."
       }
     },
     "local": {
       "Trigger": {
         "Name": "Trigger",
-        "Hint": "The text that triggers the specified dice pool to decrement.  If not specified, defaults to GM-set text."
+        "Hint": "The text that triggers the character's dice pool to decrement.  If not specified, defaults to GM-set text.."
+      },
+      "BonusTrigger": {
+        "Name": "Bonus",
+        "Hint": "The text that triggers the Bonus dice pool to decrement, if there is one.  If not specified, defaults to GM-set text.."
       }
     }
   }
