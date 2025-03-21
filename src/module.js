@@ -41,8 +41,8 @@ const spendPoolHandler = async messageId => {
     if (typeof message.rolls !== "undefined" && message.rolls.length > 0) {
       const { rolls } = message;
       for (const roll of rolls) {
-        for (const dice of roll.dice) {
-          const { flavor } = dice;
+        for (const term of roll.terms) {
+          const { flavor } = term;
           const triggerIdx = flavor.indexOf(trigger);
           if (triggerIdx >= 0) {
             const flavorRest = flavor.slice(triggerIdx + trigger.length).trim();
