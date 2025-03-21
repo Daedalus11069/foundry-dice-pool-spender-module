@@ -1,8 +1,4 @@
-const spendPoolHandler = async messageId => {
-  const message = ChatMessage.get(messageId);
-  const dicePoolsData = await game.settings.get("dicePools", "data");
-  const data = dicePoolsData ? JSON.parse(dicePoolsData) : null;
-
+const getSpenderConfig = () => {
   let fallbackTrigger = game.settings.get(
     "dice-pool-spender",
     "fallbackTrigger"
@@ -15,7 +11,6 @@ const spendPoolHandler = async messageId => {
   if (trigger === "") {
     trigger = fallbackTrigger;
   }
-
   let fallbackBonusTrigger = game.settings.get(
     "dice-pool-spender",
     "fallbackBonusTrigger"
@@ -36,6 +31,16 @@ const spendPoolHandler = async messageId => {
   if (bonusPoolSuffix === "") {
     bonusPoolSuffix = "bonus";
   }
+
+  return { trigger, bonusTrigger, bonusPoolSuffix };
+};
+
+const spendPoolHandler = async messageId => {
+  const message = ChatMessage.get(messageId);
+  const dicePoolsData = await game.settings.get("dicePools", "data");
+  const data = dicePoolsData ? JSON.parse(dicePoolsData) : null;
+
+  const { trigger, bonusTrigger, bonusPoolSuffix } = getSpenderConfig();
 
   if (data !== null) {
     if (typeof message.rolls !== "undefined" && message.rolls.length > 0) {
@@ -111,6 +116,25 @@ Hooks.once("ready", () => {
     hint: "DICEPOOLSPENDER.local.BonusTrigger.Hint",
     type: String,
     default: ""
+  });
+
+  $("#chat-controls").find(".chat-control-icon").after(`
+    <label class="chat-control-icon" data-dice-pool-spender-button="action" style="margin-left: 5px;" title="Action Die">AD</label>
+    <label class="chat-control-icon" data-dice-pool-spender-button="bonus" style="margin-left: 5px;" title="Bonus Action Die">B</label>
+  `);
+
+  $(document).on("click", "[data-dice-pool-spender-button]", function () {
+    const $chatMessage = $("#chat-message");
+    const $this = $(this);
+    const { trigger, bonusTrigger } = getSpenderConfig();
+    const buttonType = $this.data("dice-pool-spender-button");
+    if (buttonType === "action") {
+      $("#chat-message").val($chatMessage.val() + `[${trigger}]`);
+    } else if (buttonType === "bonus") {
+      $("#chat-message").val(
+        $chatMessage.val() + `[${trigger}${bonusTrigger}]`
+      );
+    }
   });
 
   if (typeof game.modules.get("dice-so-nice") !== "undefined") {
