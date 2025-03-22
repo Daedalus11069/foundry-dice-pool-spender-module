@@ -1,5 +1,9 @@
 {
   "DICEPOOLSPENDER": {
+    "AD": "AD",
+    "B": "B",
+    "ActionDie": "Action Die",
+    "BonusDie": "Bonus Action Die",
     "global": {
       "FallbackTrigger": {
         "Name": "Fallback Trigger",
@@ -12,6 +16,10 @@
       "BonusPoolSuffix": {
         "Name": "Bonus Pool Suffix",
         "Hint": "The suffix denoting a pool to be a bonus pool; defaults to 'bonus'."
+      },
+      "DieExplodes": {
+        "Name": "Die Explodes",
+        "Hint": "The pool can explode when the rolled number is the maximum possible."
       }
     },
     "local": {
@@ -22,6 +30,10 @@
       "BonusTrigger": {
         "Name": "Bonus",
         "Hint": "The text that triggers the Bonus dice pool to decrement, if there is one.  If not specified, defaults to GM-set text.."
+      },
+      "AddPoolDice": {
+        "Name": "Add Pool Dice",
+        "Hint": "Add the pool's dice when clicking the 'AD' or 'B' buttons."
       }
     }
   }

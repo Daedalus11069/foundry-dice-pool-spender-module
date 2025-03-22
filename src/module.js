@@ -32,7 +32,15 @@ const getSpenderConfig = () => {
     bonusPoolSuffix = "bonus";
   }
 
-  return { trigger, bonusTrigger, bonusPoolSuffix };
+  let addPoolDice =
+    game.settings.get("dice-pool-spender", "addPoolDice") || false;
+  if (addPoolDice === "" || addPoolDice === null) {
+    addPoolDice = false;
+  }
+
+  const dieExplodes = game.settings.get("dice-pool-spender", "dieExplodes");
+
+  return { trigger, bonusTrigger, bonusPoolSuffix, addPoolDice, dieExplodes };
 };
 
 const spendPoolHandler = async messageId => {
@@ -69,11 +77,206 @@ const spendPoolHandler = async messageId => {
   }
 };
 
+const spendPoolChatHandler = (message, trigger, bonusTrigger) => {
+  const dicePoolsData = game.settings.get("dicePools", "data");
+  const data = dicePoolsData ? JSON.parse(dicePoolsData) : null;
+  const flavor = message.content;
+  const { bonusPoolSuffix } = getSpenderConfig();
+  const triggerIdx = flavor.indexOf(trigger);
+  if (triggerIdx >= 0) {
+    const flavorRest = flavor.slice(triggerIdx + trigger.length).trim();
+    let speakerAlias = message.speaker.alias;
+    if (flavorRest.indexOf(bonusTrigger) >= 0) {
+      speakerAlias += ` ${bonusPoolSuffix}`;
+    }
+    speakerAlias = speakerAlias.toLowerCase();
+    const dicePoolIdx = data.findIndex(
+      ({ name }) => name.toLowerCase() === speakerAlias
+    );
+    if (dicePoolIdx >= 0) {
+      dicePools.decreaseDicePool(dicePoolIdx);
+    }
+  }
+};
+
+const getDicePoolFormula = (speakerAlias, data = []) => {
+  const dicePoolIdx = data.findIndex(
+    ({ name }) => name.toLowerCase() === speakerAlias
+  );
+  if (dicePoolIdx >= 0) {
+    const formula = data[dicePoolIdx].diceFormat;
+    return formula;
+  }
+};
+
+const addPoolDiceToTray = function (buttonType, data = []) {
+  const { bonusPoolSuffix, addPoolDice } = getSpenderConfig();
+  if (addPoolDice) {
+    if (CONFIG.DICETRAY) {
+      let speakerAlias = game.user?.character?.name || game.user.name;
+      if (buttonType === "bonus") {
+        speakerAlias += ` ${bonusPoolSuffix}`;
+      }
+      speakerAlias = speakerAlias.toLowerCase();
+
+      const dicePoolIdx = data.findIndex(
+        ({ name }) => name.toLowerCase() === speakerAlias
+      );
+      if (dicePoolIdx >= 0) {
+        const formula = data[dicePoolIdx].diceFormat;
+        CONFIG.DICETRAY.updateChatDice({ formula }, "add", $("#chat"));
+      }
+    }
+  }
+};
+
+const subPoolDiceFromTray = function (buttonType, data = []) {
+  const { bonusPoolSuffix, addPoolDice } = getSpenderConfig();
+  if (addPoolDice) {
+    if (CONFIG.DICETRAY) {
+      let speakerAlias = game.user?.character?.name || game.user.name;
+      if (buttonType === "bonus") {
+        speakerAlias += ` ${bonusPoolSuffix}`;
+      }
+      speakerAlias = speakerAlias.toLowerCase();
+
+      const dicePoolIdx = data.findIndex(
+        ({ name }) => name.toLowerCase() === speakerAlias
+      );
+      if (dicePoolIdx >= 0) {
+        const formula = data[dicePoolIdx].diceFormat;
+        CONFIG.DICETRAY.updateChatDice({ formula }, "sub", $("#chat"));
+      }
+    }
+  }
+};
+
+const explodingDieHandler = ($chatMessage, formula) => {
+  $chatMessage.val(
+    $chatMessage.val().replace(new RegExp(`(${formula})`, "i"), "$1x")
+  );
+};
+
+const spenderButtonHandler = async function () {
+  const $chatMessage = $("#chat-message");
+  const $this = $(this);
+  const { trigger, bonusTrigger, bonusPoolSuffix, dieExplodes } =
+    getSpenderConfig();
+  const buttonType = $this.data("dice-pool-spender-button");
+  const dicePoolsData = await game.settings.get("dicePools", "data");
+  const data = dicePoolsData ? JSON.parse(dicePoolsData) : null;
+  const regTrigger = RegExp.escape(trigger);
+  const regBonusTrigger = RegExp.escape(bonusTrigger);
+
+  if (buttonType === "action") {
+    if (
+      new RegExp(`\\[${regTrigger}\\]`, "i").test($chatMessage.val()) === false
+    ) {
+      const fullTriggerStrMatch = $chatMessage
+        .val()
+        .match(new RegExp(`\\[(${regTrigger}(${regBonusTrigger})?)\\]`, "i"));
+      if (fullTriggerStrMatch !== null) {
+        $chatMessage.val(
+          $chatMessage
+            .val()
+            .replace(
+              new RegExp(`\\[${regTrigger}(${regBonusTrigger})?\\]`, "i"),
+              ""
+            )
+        );
+        if (dieExplodes) {
+          let speakerAlias = game.user?.character?.name || game.user.name;
+          speakerAlias += ` ${bonusPoolSuffix}`;
+          speakerAlias = speakerAlias.toLowerCase();
+          const formula = getDicePoolFormula(speakerAlias, data);
+          $chatMessage.val(
+            $chatMessage.val().replace(new RegExp(`(${formula})x`, "i"), "$1")
+          );
+        }
+        subPoolDiceFromTray("bonus", data);
+      }
+      addPoolDiceToTray(buttonType, data);
+      $chatMessage.val($chatMessage.val() + `[${trigger}]`);
+      if (dieExplodes) {
+        let speakerAlias = game.user?.character?.name || game.user.name;
+        speakerAlias = speakerAlias.toLowerCase();
+        const formula = getDicePoolFormula(speakerAlias, data);
+        explodingDieHandler($chatMessage, formula);
+      }
+    }
+  } else if (buttonType === "bonus") {
+    if (
+      new RegExp(`\\[${regTrigger}${regBonusTrigger}\\]`, "i").test(
+        $chatMessage.val()
+      ) === false
+    ) {
+      const fullTriggerStrMatch = $chatMessage
+        .val()
+        .match(new RegExp(`\\[(${regTrigger}(${regBonusTrigger})?)\\]`, "i"));
+      if (fullTriggerStrMatch !== null) {
+        $chatMessage.val(
+          $chatMessage
+            .val()
+            .replace(
+              new RegExp(`\\[${regTrigger}(${regBonusTrigger})?\\]`, "i"),
+              ""
+            )
+        );
+        if (dieExplodes) {
+          let speakerAlias = game.user?.character?.name || game.user.name;
+          // speakerAlias += ` ${bonusPoolSuffix}`;
+          speakerAlias = speakerAlias.toLowerCase();
+          const formula = getDicePoolFormula(speakerAlias, data);
+          $chatMessage.val(
+            $chatMessage
+              .val()
+              .replace(new RegExp(`(${RegExp.escape(formula)})x`, "i"), "$1")
+          );
+        }
+        subPoolDiceFromTray("action", data);
+        addPoolDiceToTray(buttonType, data);
+        $chatMessage.val($chatMessage.val() + `[${fullTriggerStrMatch[1]}]`);
+        if (dieExplodes) {
+          let speakerAlias = game.user?.character?.name || game.user.name;
+          speakerAlias += ` ${bonusPoolSuffix}`;
+          speakerAlias = speakerAlias.toLowerCase();
+          const formula = getDicePoolFormula(speakerAlias, data);
+          explodingDieHandler($chatMessage, formula);
+        }
+      } else {
+        if (dieExplodes) {
+          let speakerAlias = game.user?.character?.name || game.user.name;
+          speakerAlias += ` ${bonusPoolSuffix}`;
+          speakerAlias = speakerAlias.toLowerCase();
+          const formula = getDicePoolFormula(speakerAlias, data);
+          $chatMessage.val(
+            $chatMessage.val().replace(new RegExp(`(${formula})x`, "i"), "$1")
+          );
+        }
+        addPoolDiceToTray(buttonType, data);
+        if (dieExplodes) {
+          let speakerAlias = game.user?.character?.name || game.user.name;
+          speakerAlias += ` ${bonusPoolSuffix}`;
+          speakerAlias = speakerAlias.toLowerCase();
+          const formula = getDicePoolFormula(speakerAlias, data);
+          explodingDieHandler($chatMessage, formula);
+        }
+      }
+      if (new RegExp(regTrigger, "i").test($chatMessage.val())) {
+        $chatMessage.val($chatMessage.val().slice(0, -1) + `${bonusTrigger}]`);
+      } else {
+        $chatMessage.val($chatMessage.val() + `[${trigger}${bonusTrigger}]`);
+      }
+    }
+  }
+};
+
 let socket;
 
 Hooks.once("socketlib.ready", () => {
   socket = window.socketlib.registerModule("dice-pool-spender");
   socket.register("spendPool", spendPoolHandler);
+  socket.register("spendPoolChat", spendPoolChatHandler);
 });
 
 Hooks.once("ready", () => {
@@ -117,25 +320,37 @@ Hooks.once("ready", () => {
     type: String,
     default: ""
   });
+  game.settings.register("dice-pool-spender", "addPoolDice", {
+    scope: "client",
+    config: true,
+    name: "DICEPOOLSPENDER.local.AddPoolDice.Name",
+    hint: "DICEPOOLSPENDER.local.AddPoolDice.Hint",
+    type: Boolean,
+    default: false
+  });
+  game.settings.register("dice-pool-spender", "dieExplodes", {
+    scope: "world",
+    config: true,
+    name: "DICEPOOLSPENDER.global.DieExplodes.Name",
+    hint: "DICEPOOLSPENDER.global.DieExplodes.Hint",
+    type: Boolean,
+    default: true
+  });
 
   $("#chat-controls").find(".chat-control-icon").after(`
-    <label class="chat-control-icon" data-dice-pool-spender-button="action" style="margin-left: 5px;" title="Action Die">AD</label>
-    <label class="chat-control-icon" data-dice-pool-spender-button="bonus" style="margin-left: 5px;" title="Bonus Action Die">B</label>
+    <label class="chat-control-icon" data-dice-pool-spender-button="action" style="margin-left: 5px;" title="${game.i18n.format(
+      "DICEPOOLSPENDER.ActionDie"
+    )}">${game.i18n.format("DICEPOOLSPENDER.AD")}</label>
+    <label class="chat-control-icon" data-dice-pool-spender-button="bonus" style="margin-left: 5px;" title="${game.i18n.format(
+      "DICEPOOLSPENDER.BonusDie"
+    )}">${game.i18n.format("DICEPOOLSPENDER.B")}</label>
   `);
 
-  $(document).on("click", "[data-dice-pool-spender-button]", function () {
-    const $chatMessage = $("#chat-message");
-    const $this = $(this);
-    const { trigger, bonusTrigger } = getSpenderConfig();
-    const buttonType = $this.data("dice-pool-spender-button");
-    if (buttonType === "action") {
-      $("#chat-message").val($chatMessage.val() + `[${trigger}]`);
-    } else if (buttonType === "bonus") {
-      $("#chat-message").val(
-        $chatMessage.val() + `[${trigger}${bonusTrigger}]`
-      );
-    }
-  });
+  $(document).on(
+    "click",
+    "[data-dice-pool-spender-button]",
+    spenderButtonHandler
+  );
 
   if (typeof game.modules.get("dice-so-nice") !== "undefined") {
     Hooks.on("diceSoNiceRollComplete", async messageId => {
@@ -144,10 +359,32 @@ Hooks.once("ready", () => {
         await socket.executeAsGM("spendPool", messageId);
       }
     });
+    Hooks.on("renderChatMessage", async message => {
+      if (game.user.id === message.user.id) {
+        const { trigger, bonusTrigger } = getSpenderConfig();
+        await socket.executeAsGM(
+          "spendPoolChat",
+          message,
+          trigger,
+          bonusTrigger
+        );
+      }
+    });
   } else {
     Hooks.on("renderChatMessage", async message => {
       if (game.user.id === message.user.id) {
         await socket.executeAsGM("spendPool", message.id);
+      }
+    });
+    Hooks.on("renderChatMessage", async message => {
+      if (game.user.id === message.user.id) {
+        const { trigger, bonusTrigger } = getSpenderConfig();
+        await socket.executeAsGM(
+          "spendPoolChat",
+          message,
+          trigger,
+          bonusTrigger
+        );
       }
     });
   }
