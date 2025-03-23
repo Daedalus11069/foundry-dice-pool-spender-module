@@ -43,7 +43,7 @@ const getSpenderConfig = () => {
   return { trigger, bonusTrigger, bonusPoolSuffix, addPoolDice, dieExplodes };
 };
 
-const spendPoolHandler = (messageId, trigger, bonusTrigger) => {
+const spendPoolHandler = (messageId, trigger, bonusTrigger, isGM = false) => {
   const message = ChatMessage.get(messageId);
   const dicePoolsData = game.settings.get("dicePools", "data");
   const data = !!dicePoolsData ? JSON.parse(dicePoolsData) : null;
@@ -59,7 +59,7 @@ const spendPoolHandler = (messageId, trigger, bonusTrigger) => {
           const triggerIdx = flavor.indexOf(trigger);
           if (triggerIdx >= 0) {
             const flavorRest = flavor.slice(triggerIdx + trigger.length).trim();
-            let speakerAlias = message.speaker.alias;
+            let speakerAlias = isGM ? message.user.name : message.speaker.alias;
             // Could use Actor.get(message.speaker.actor).name
             if (flavorRest.indexOf(bonusTrigger) >= 0) {
               speakerAlias += ` ${bonusPoolSuffix}`;
@@ -78,7 +78,7 @@ const spendPoolHandler = (messageId, trigger, bonusTrigger) => {
   }
 };
 
-const spendPoolChatHandler = (message, trigger, bonusTrigger) => {
+const spendPoolChatHandler = (message, trigger, bonusTrigger, isGM = false) => {
   if (message.rolls.length === 0) {
     const dicePoolsData = game.settings.get("dicePools", "data");
     const data = !!dicePoolsData ? JSON.parse(dicePoolsData) : null;
@@ -88,7 +88,7 @@ const spendPoolChatHandler = (message, trigger, bonusTrigger) => {
     const triggerIdx = flavor.indexOf(trigger);
     if (triggerIdx >= 0) {
       const flavorRest = flavor.slice(triggerIdx + trigger.length).trim();
-      let speakerAlias = message.speaker.alias;
+      let speakerAlias = isGM ? message.user.name : message.speaker.alias;
       // Could use Actor.get(message.speaker.actor).name
       if (flavorRest.indexOf(bonusTrigger) >= 0) {
         speakerAlias += ` ${bonusPoolSuffix}`;
@@ -362,7 +362,13 @@ Hooks.once("ready", () => {
       const { trigger, bonusTrigger } = getSpenderConfig();
       const message = ChatMessage.get(messageId);
       if (game.user.id === message.user.id) {
-        await socket.executeAsGM("spendPool", messageId, trigger, bonusTrigger);
+        await socket.executeAsGM(
+          "spendPool",
+          messageId,
+          trigger,
+          bonusTrigger,
+          game.user.isGM
+        );
       }
     });
     Hooks.on("renderChatMessage", async message => {
@@ -372,7 +378,8 @@ Hooks.once("ready", () => {
           "spendPoolChat",
           message,
           trigger,
-          bonusTrigger
+          bonusTrigger,
+          game.user.isGM
         );
       }
     });
@@ -384,7 +391,8 @@ Hooks.once("ready", () => {
           "spendPool",
           message.id,
           trigger,
-          bonusTrigger
+          bonusTrigger,
+          game.user.isGM
         );
       }
     });
@@ -395,7 +403,8 @@ Hooks.once("ready", () => {
           "spendPoolChat",
           message,
           trigger,
-          bonusTrigger
+          bonusTrigger,
+          game.user.isGM
         );
       }
     });
