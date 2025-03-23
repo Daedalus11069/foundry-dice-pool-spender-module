@@ -59,7 +59,7 @@ const spendPoolHandler = (messageId, trigger, bonusTrigger) => {
           const triggerIdx = flavor.indexOf(trigger);
           if (triggerIdx >= 0) {
             const flavorRest = flavor.slice(triggerIdx + trigger.length).trim();
-            let speakerAlias = message.speaker.alias;
+            let speakerAlias = Actor.get(message.speaker.actor).name;
             if (flavorRest.indexOf(bonusTrigger) >= 0) {
               speakerAlias += ` ${bonusPoolSuffix}`;
             }
@@ -87,7 +87,7 @@ const spendPoolChatHandler = (message, trigger, bonusTrigger) => {
     const triggerIdx = flavor.indexOf(trigger);
     if (triggerIdx >= 0) {
       const flavorRest = flavor.slice(triggerIdx + trigger.length).trim();
-      let speakerAlias = message.speaker.alias;
+      let speakerAlias = Actor.get(message.speaker.actor).name;
       if (flavorRest.indexOf(bonusTrigger) >= 0) {
         speakerAlias += ` ${bonusPoolSuffix}`;
       }
